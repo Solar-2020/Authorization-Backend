@@ -61,7 +61,6 @@ func (s *service) Registration(request models.Registration) (cookie models.Cooki
 	}
 
 	pass := s.generatePassword(userID, request.Password)
-
 	err = s.authorizationStorage.InsertPassword(pass)
 	if err != nil {
 		return

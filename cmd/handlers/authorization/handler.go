@@ -48,7 +48,13 @@ func (h *handler) Authorization(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	err = h.authorizationTransport.AuthorizationEncode(ctx, cookie)
+	resp := models.AuthorizationResponse{
+		Login:  auth.Login,
+		Status: "OK",
+		Uid: cookie.UserID,
+	}
+
+	err = h.authorizationTransport.AuthorizationEncode(ctx, resp, cookie)
 	if err != nil {
 		fmt.Println("Create: cannot encode response: ", err)
 		err = h.errorWorker.ServeJSONError(ctx, err)
@@ -81,7 +87,12 @@ func (h *handler) Registration(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	err = h.authorizationTransport.RegistrationEncode(ctx, cookie)
+
+	resp := models.RegistrationResponse{
+		Registration: auth,
+		Uid: cookie.UserID,
+	}
+	err = h.authorizationTransport.RegistrationEncode(ctx, resp, cookie)
 	if err != nil {
 		fmt.Println("Create: cannot encode response: ", err)
 		err = h.errorWorker.ServeJSONError(ctx, err)

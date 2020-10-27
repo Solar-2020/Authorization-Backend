@@ -3,14 +3,28 @@ package models
 import "time"
 
 type Authorization struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string `json:"login" validation:"required"`
+	Password string `json:"password" validation:"required"`
 	Uid 	 int 	`json:'uid'`
 }
 
+type AuthorizationResponse struct {
+	Login string `json:"login"`
+	Status string	`json:"status"`
+	Uid 	int 	`json:'uid'`
+}
+
 type Registration struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string `json:"login" validation:"required,email"`
+	Password string `json:"password,omitempty" validation:"required"`
+	Avatar	 string	`json:"avatar"`
+	Name	 string `json:"name" validation:"required"`
+	Surname	 string `json:"surname"`
+}
+
+type RegistrationResponse struct {
+	Registration
+	Uid int 	`json:'uid'`
 }
 
 type Cookie struct {
@@ -27,7 +41,7 @@ type Password struct {
 }
 
 type CheckAuthRequest struct {
-	SessionToken string	`json:"cookie"`
+	SessionToken string	`json:"cookie" validation"required"`
 }
 
 type CheckAuthResponse struct {

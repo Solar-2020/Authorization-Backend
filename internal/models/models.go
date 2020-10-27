@@ -5,6 +5,7 @@ import "time"
 type Authorization struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
+	Uid 	 int 	`json:'uid'`
 }
 
 type Registration struct {
@@ -20,7 +21,16 @@ type Cookie struct {
 
 type Password struct {
 	UserID   int
-	HashPassword string
-	Salt     string
+	HashPassword []byte
+	Salt     []byte
 	UpdateAt time.Time
+}
+
+type CheckAuthRequest struct {
+	SessionToken string	`json:"cookie"`
+}
+
+type CheckAuthResponse struct {
+	Uid int	`json:"uid"`
+	//Email string	`json:"email"`
 }

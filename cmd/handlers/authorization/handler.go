@@ -2,6 +2,7 @@ package authorizationHandler
 
 import (
 	"fmt"
+	"github.com/Solar-2020/Authorization-Backend/internal/models"
 	"github.com/valyala/fasthttp"
 )
 
@@ -92,34 +93,29 @@ func (h *handler) Registration(ctx *fasthttp.RequestCtx) {
 }
 
 func (h *handler) GetUserIdByCookie(ctx *fasthttp.RequestCtx) {
-	fmt.Println("New incoming request: POST /authorization/authorization")
-	cookieValue, err := h.authorizationTransport.GetUserIdByCookieDecode(ctx)
+	req, err := h.authorizationTransport.GetUserIdByCookieDecode(ctx)
 	if err != nil {
-		fmt.Println("Create: cannot decode request")
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
 		return
 	}
 
-	userID, err := h.authorizationService.GetUserIdByCookie(cookieValue)
+	userID, err := h.authorizationService.GetUserIdByCookie(req.SessionToken)
 	if err != nil {
-		fmt.Println("Create: bad usecase: ", err)
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
 		return
 	}
 
-	err = h.authorizationTransport.GetUserIdByCookieEncode(ctx, userID)
+	err = h.authorizationTransport.GetUserIdByCookieEncode(ctx, models.CheckAuthResponse{Uid: userID})
 	if err != nil {
-		fmt.Println("Create: cannot encode response: ", err)
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
 		return
 	}
+}
+
+func (h *handler) handleError(err error, ctx *fasthttp.RequestCtx) {
+	err = h.errorWorker.ServeJSONError(ctx, err)
+	if err != nil {
+		h.errorWorker.ServeFatalError(ctx)
+	}
+	return
 }

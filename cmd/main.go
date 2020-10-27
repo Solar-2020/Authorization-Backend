@@ -2,11 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/cmd/handlers"
 	authorizationHandler "github.com/Solar-2020/Authorization-Backend/cmd/handlers/authorization"
+	"github.com/Solar-2020/Authorization-Backend/internal"
 	"github.com/Solar-2020/Authorization-Backend/internal/errorWorker"
 	"github.com/Solar-2020/Authorization-Backend/internal/services/authorization"
 	"github.com/Solar-2020/Authorization-Backend/internal/storages/authorizationStorage"
+	httputils "github.com/Solar-2020/GoUtils/http"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
@@ -16,22 +19,16 @@ import (
 	"syscall"
 )
 
-type config struct {
-	Port                          string `envconfig:"PORT" default:"8099"`
-	AuthorizationDataBaseConnectionString string `envconfig:"AUTHORIZATION_DB_CONNECTION_STRING" default:"-"`
-}
-
 func main() {
 	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout})
 
-	var cfg config
-	err := envconfig.Process("", &cfg)
+	err := envconfig.Process("", &config.Config)
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 		return
 	}
 
-	authorizationDB, err := sql.Open("postgres", cfg.AuthorizationDataBaseConnectionString)
+	authorizationDB, err := sql.Open("postgres", config.Config.AuthorizationDataBaseConnectionString)
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 		return
@@ -43,20 +40,21 @@ func main() {
 	errorWorker := errorWorker.NewErrorWorker()
 
 	authorizationStorage := authorizationStorage.NewStorage(authorizationDB)
-	authorizationService := authorization.NewService(authorizationStorage)
+	accountService := internal.AccountService{}
+	authorizationService := authorization.NewService(authorizationStorage, &accountService)
 	authorizationTransport := authorization.NewTransport()
 
 	authorizationHandler := authorizationHandler.NewHandler(authorizationService, authorizationTransport, errorWorker)
 
-	middlewares := handlers.NewMiddleware()
+	middlewares := httputils.NewMiddleware()
 
 	server := fasthttp.Server{
 		Handler: handlers.NewFastHttpRouter(authorizationHandler, middlewares).Handler,
 	}
 
 	go func() {
-		log.Info().Str("msg", "start server").Str("port", cfg.Port).Send()
-		if err := server.ListenAndServe(":" + cfg.Port); err != nil {
+		log.Info().Str("msg", "start server").Str("port", config.Config.Port).Send()
+		if err := server.ListenAndServe(":" + config.Config.Port); err != nil {
 			log.Error().Str("msg", "server run failure").Err(err).Send()
 			os.Exit(1)
 		}

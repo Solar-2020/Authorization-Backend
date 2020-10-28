@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Solar-2020/Account-Backend/pkg/api"
+	accountModels "github.com/Solar-2020/Account-Backend/pkg/models"
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/internal/models"
 	"github.com/Solar-2020/GoUtils/common"
@@ -22,10 +24,10 @@ type Service interface {
 
 type service struct {
 	authorizationStorage  authorizationStorage
-	accountClient         accountClient
+	accountClient         models.AccountServiceInterface
 }
 
-func NewService(authorizationStorage authorizationStorage, accountClient accountClient) Service {
+func NewService(authorizationStorage authorizationStorage, accountClient models.AccountServiceInterface) Service {
 	return &service{
 		authorizationStorage:  authorizationStorage,
 		accountClient:         accountClient,
@@ -33,11 +35,12 @@ func NewService(authorizationStorage authorizationStorage, accountClient account
 }
 
 func (s *service) Authorization(request models.Authorization) (cookie models.Cookie, err error) {
-	//userID, err := s.accountClient.GetUserIDByEmail(request.Login)
-	//if err != nil {
-	//	return
-	//}
-	userID := request.Uid
+	user, err := s.accountClient.GetUserByEmail(request.Login)
+	if err != nil {
+		err = fmt.Errorf("not exist")
+		return
+	}
+	userID := user.ID
 
 	err = s.checkLogoPass(userID, request.Password)
 	if err != nil {
@@ -55,7 +58,7 @@ func (s *service) Authorization(request models.Authorization) (cookie models.Coo
 }
 
 func (s *service) Registration(request models.Registration) (cookie models.Cookie, err error) {
-	userID, err := s.accountClient.CreateUser(request)
+	userID, err := s.createUser(request)
 	if err != nil {
 		return
 	}
@@ -124,3 +127,20 @@ func (s *service) generatePassword(userID int, userPassword string) (pass models
 func (s *service) hashPassword(plainPassword []byte, salt []byte) (hashPass []byte) {
 	return pbkdf2.Key(plainPassword, salt, 4096, 32, sha1.New)
 }
+
+func (s *service) createUser(user models.Registration) (userID int, err error) {
+	resp, err := s.accountClient.CreateUser(api.CreateRequest{
+		User: accountModels.User{
+			Email:     user.Login,
+			Name:      user.Name,
+			Surname:   user.Surname,
+			AvatarURL: user.Avatar,
+		},
+	})
+	if err != nil {
+		return
+	}
+	userID = resp.User.ID
+	return
+}
+

@@ -72,7 +72,6 @@ func (t transport) RegistrationEncode(ctx *fasthttp.RequestCtx, resp models.Regi
 	return
 }
 
-
 func (t transport) GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error) {
 	err = json.Unmarshal(ctx.Request.Body(), &request)
 	if err != nil {
@@ -97,6 +96,7 @@ func (t *transport) setCookie(ctx *fasthttp.RequestCtx, src models.Cookie) {
 	cookie := fasthttp.Cookie{}
 	cookie.SetKey(config.Config.SessionCookieName)
 	cookie.SetDomain(string(ctx.Request.Host()))
+	cookie.SetPath("/")
 	cookie.SetValue(src.Value)
 	cookie.SetExpire(src.Expiration)
 	ctx.Response.Header.SetCookie(&cookie)

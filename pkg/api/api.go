@@ -17,7 +17,7 @@ func (c *AuthClient) Address () string { return c.Addr }
 func (c *AuthClient) ByCookie(cookie string, headers map[string]string) (uid int, err error) {
 	endpoint := service.ServiceEndpoint{
 		Service:   	 c,
-		Endpoint:    "/auth/cookie",
+		Endpoint:    "/api/auth/cookie",
 		Method:      "POST",
 		//ContentType: "application/json",
 	}

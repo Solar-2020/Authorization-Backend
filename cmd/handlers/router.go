@@ -14,10 +14,10 @@ func NewFastHttpRouter(authorization authorizationHandler.Handler, middleware ht
 	router.PanicHandler = httputils.PanicHandler
 	middlewareChain := httputils.NewLogCorsChain(middleware)
 
-	router.Handle("POST", "/auth/login", middlewareChain(authorization.Authorization))
-	router.Handle("PUT", "/auth/signup", middlewareChain(authorization.Registration))
+	router.Handle("POST", "/api/auth/login", middlewareChain(authorization.Authorization))
+	router.Handle("PUT", "/api/auth/signup", middlewareChain(authorization.Registration))
 
-	router.Handle("POST", "/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
+	router.Handle("POST", "/api/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
 
 	return router
 }

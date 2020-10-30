@@ -55,13 +55,9 @@ func (s *storage) SelectCookieByValue(cookieValue string) (cookie models.Cookie,
 	const tmplQuery = `SELECT user_id, expiration FROM %s WHERE cookie=$1`
 
 	query := fmt.Sprintf(tmplQuery, sessionsTable)
-	row := s.db.QueryRow(query, cookieValue)
-	if row == nil {
-		err = fmt.Errorf("nil row")
-		return
-	}
-	err = row.Scan(&cookie.UserID, &cookie.Expiration)
 	cookie.Value = cookieValue
+	err = s.db.QueryRow(query, cookieValue).Scan(&cookie.UserID, &cookie.Expiration)
+
 	return
 }
 

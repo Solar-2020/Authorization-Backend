@@ -7,8 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/Solar-2020/Account-Backend/pkg/api"
-	accountModels "github.com/Solar-2020/Account-Backend/pkg/models"
+	models2 "github.com/Solar-2020/Account-Backend/pkg/models"
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/internal/models"
 	"github.com/Solar-2020/GoUtils/common"
@@ -23,14 +22,14 @@ type Service interface {
 }
 
 type service struct {
-	authorizationStorage  authorizationStorage
-	accountClient         models.AccountServiceInterface
+	authorizationStorage authorizationStorage
+	accountClient        models.AccountServiceInterface
 }
 
 func NewService(authorizationStorage authorizationStorage, accountClient models.AccountServiceInterface) Service {
 	return &service{
-		authorizationStorage:  authorizationStorage,
-		accountClient:         accountClient,
+		authorizationStorage: authorizationStorage,
+		accountClient:        accountClient,
 	}
 }
 
@@ -129,18 +128,15 @@ func (s *service) hashPassword(plainPassword []byte, salt []byte) (hashPass []by
 }
 
 func (s *service) createUser(user models.Registration) (userID int, err error) {
-	resp, err := s.accountClient.CreateUser(api.CreateRequest{
-		User: accountModels.User{
-			Email:     user.Login,
-			Name:      user.Name,
-			Surname:   user.Surname,
-			AvatarURL: user.Avatar,
-		},
+	resp, err := s.accountClient.CreateUser(models2.User{
+		Email:     user.Login,
+		Name:      user.Name,
+		Surname:   user.Surname,
+		AvatarURL: user.Avatar,
 	})
 	if err != nil {
 		return
 	}
-	userID = resp.User.ID
+	userID = resp
 	return
 }
-

@@ -6,6 +6,7 @@ import (
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/cmd/handlers"
 	authorizationHandler "github.com/Solar-2020/Authorization-Backend/cmd/handlers/authorization"
+	"github.com/Solar-2020/Authorization-Backend/internal/clients/account"
 	"github.com/Solar-2020/Authorization-Backend/internal/services/authorization"
 	"github.com/Solar-2020/Authorization-Backend/internal/storages/authorizationStorage"
 	authapi "github.com/Solar-2020/Authorization-Backend/pkg/api"
@@ -42,10 +43,8 @@ func main() {
 	errorWorker := errorWorker.NewErrorWorker()
 
 	authorizationStorage := authorizationStorage.NewStorage(authorizationDB)
-	accountService := asapi.AccountClient{
-		Addr:    config.Config.AccountServiceAddress,
-	}
-	authorizationService := authorization.NewService(authorizationStorage, &accountService)
+	accountService := account.NewClient(config.Config.AccountServiceAddress, config.Config.ServerSecret)
+	authorizationService := authorization.NewService(authorizationStorage, accountService)
 	authorizationTransport := authorization.NewTransport()
 
 	initServices()
@@ -84,11 +83,11 @@ func main() {
 
 func initServices() {
 	authService := authapi.AuthClient{
-		Addr:    config.Config.AuthServiceAddress,
+		Addr: config.Config.AuthServiceAddress,
 	}
 	session.RegisterAuthService(&authService)
 	accountService := asapi.AccountClient{
-		Addr:    config.Config.AccountServiceAddress,
+		Addr: config.Config.AccountServiceAddress,
 	}
 	session.RegisterAccountService(&accountService)
 }

@@ -18,7 +18,7 @@ func NewFastHttpRouter(authorization authorizationHandler.Handler, middleware ht
 	router.Handle("POST", "/api/auth/signup", middlewareChain(authorization.Registration))
 	router.Handle("POST", "/api/auth/yandex/:userToken", middlewareChain(authorization.Yandex))
 
-	router.Handle("POST", "/api/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
+	router.Handle("GET", "/api/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
 
 	return router
 }

@@ -7,5 +7,6 @@ import (
 type AccountServiceInterface interface {
 	GetUserByUid(userID int) (user models.User, err error)
 	GetUserByEmail(email string) (user models.User, err error)
+	GetYandexUser(userToken string) (user models.User, err error)
 	CreateUser(request models.User) (userID int, err error)
 }

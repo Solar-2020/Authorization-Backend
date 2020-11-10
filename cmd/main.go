@@ -43,8 +43,8 @@ func main() {
 	errorWorker := errorWorker.NewErrorWorker()
 
 	authorizationStorage := authorizationStorage.NewStorage(authorizationDB)
-	accountService := account.NewClient(config.Config.AccountServiceAddress, config.Config.ServerSecret)
-	authorizationService := authorization.NewService(authorizationStorage, accountService)
+	accountClient := account.NewClient(config.Config.AccountServiceAddress, config.Config.ServerSecret)
+	authorizationService := authorization.NewService(authorizationStorage, accountClient)
 	authorizationTransport := authorization.NewTransport()
 
 	initServices()

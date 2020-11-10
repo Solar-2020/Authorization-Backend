@@ -6,13 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Solar-2020/Account-Backend/pkg/models"
+	"github.com/valyala/fasthttp"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
 type Client interface {
 	GetUserByUid(userID int) (user models.User, err error)
 	GetUserByEmail(email string) (user models.User, err error)
+	GetYandexUser(userToken string) (user models.User, err error)
 	CreateUser(request models.User) (userID int, err error)
 }
 
@@ -84,6 +87,45 @@ func (c *client) GetUserByEmail(email string) (user models.User, err error) {
 	case http.StatusBadRequest:
 		var httpErr httpError
 		err = json.NewDecoder(resp.Body).Decode(&httpErr)
+		if err != nil {
+			return
+		}
+		return user, errors.New(httpErr.Error)
+	default:
+		return user, errors.New("Unexpected Server Error")
+	}
+}
+
+func (c *client) GetYandexUser(userToken string) (user models.User, err error) {
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(resp)
+
+	req.Header.SetMethod("GET")
+	req.Header.Add("Authorization", c.secret)
+
+	tempURI, err := url.ParseRequestURI(c.host)
+	if err != nil {
+		return user, err
+	}
+	req.URI().SetScheme("http")
+	req.URI().SetHost(tempURI.Host)
+	req.URI().SetPath("api/internal/account/yandex/" + userToken)
+
+	err = fasthttp.Do(req, resp)
+	if err != nil {
+		return
+	}
+
+	switch resp.StatusCode() {
+	case fasthttp.StatusOK:
+		var response models.User
+		err = json.Unmarshal(resp.Body(), &response)
+		return response, err
+	case fasthttp.StatusBadRequest:
+		var httpErr httpError
+		err = json.Unmarshal(resp.Body(), &httpErr)
 		if err != nil {
 			return
 		}

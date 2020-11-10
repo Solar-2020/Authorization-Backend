@@ -15,7 +15,8 @@ func NewFastHttpRouter(authorization authorizationHandler.Handler, middleware ht
 	middlewareChain := httputils.NewLogCorsChain(middleware)
 
 	router.Handle("POST", "/api/auth/login", middlewareChain(authorization.Authorization))
-	router.Handle("PUT", "/api/auth/signup", middlewareChain(authorization.Registration))
+	router.Handle("POST", "/api/auth/signup", middlewareChain(authorization.Registration))
+	router.Handle("POST", "/api/auth/yandex/:userToken", middlewareChain(authorization.Yandex))
 
 	router.Handle("POST", "/api/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
 

@@ -8,6 +8,7 @@ import (
 type authorizationService interface {
 	Authorization(request models.Authorization) (cookie models.Cookie, err error)
 	Registration(request models.Registration) (cookie models.Cookie, err error)
+	Yandex(userToken string) (cookie models.Cookie, err error)
 	GetUserIdByCookie(cookieValue string) (userID int, err error)
 }
 
@@ -20,6 +21,9 @@ type authorizationTransport interface {
 
 	GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error)
 	GetUserIdByCookieEncode(ctx *fasthttp.RequestCtx, response models.CheckAuthResponse) (err error)
+
+	YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error)
+	YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error)
 }
 
 type errorWorker interface {

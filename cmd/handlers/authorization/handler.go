@@ -9,6 +9,7 @@ import (
 type Handler interface {
 	Authorization(ctx *fasthttp.RequestCtx)
 	Registration(ctx *fasthttp.RequestCtx)
+	Yandex(ctx *fasthttp.RequestCtx)
 	GetUserIdByCookie(ctx *fasthttp.RequestCtx)
 }
 
@@ -70,20 +71,14 @@ func (h *handler) Registration(ctx *fasthttp.RequestCtx) {
 	auth, err := h.authorizationTransport.RegistrationDecode(ctx)
 	if err != nil {
 		fmt.Println("Create: cannot decode request")
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
 		return
 	}
 
 	cookie, err := h.authorizationService.Registration(auth)
 	if err != nil {
 		fmt.Println("Create: bad usecase: ", err)
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
 		return
 	}
 
@@ -95,10 +90,27 @@ func (h *handler) Registration(ctx *fasthttp.RequestCtx) {
 	err = h.authorizationTransport.RegistrationEncode(ctx, resp, cookie)
 	if err != nil {
 		fmt.Println("Create: cannot encode response: ", err)
-		err = h.errorWorker.ServeJSONError(ctx, err)
-		if err != nil {
-			h.errorWorker.ServeFatalError(ctx)
-		}
+		h.handleError(err, ctx)
+		return
+	}
+}
+
+func (h *handler) Yandex(ctx *fasthttp.RequestCtx) {
+	auth, err := h.authorizationTransport.YandexDecode(ctx)
+	if err != nil {
+		h.handleError(err, ctx)
+		return
+	}
+
+	cookie, err := h.authorizationService.Yandex(auth)
+	if err != nil {
+		h.handleError(err, ctx)
+		return
+	}
+
+	err = h.authorizationTransport.YandexEncode(ctx, cookie)
+	if err != nil {
+		h.handleError(err, ctx)
 		return
 	}
 }

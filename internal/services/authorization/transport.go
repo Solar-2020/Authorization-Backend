@@ -17,6 +17,9 @@ type Transport interface {
 
 	GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error)
 	GetUserIdByCookieEncode(ctx *fasthttp.RequestCtx, response models.CheckAuthResponse) (err error)
+
+	YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error)
+	YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error)
 }
 
 type transport struct {
@@ -89,6 +92,18 @@ func (t transport) GetUserIdByCookieEncode(ctx *fasthttp.RequestCtx, response mo
 	ctx.Response.Header.SetContentType("application/json")
 	ctx.Response.Header.SetStatusCode(fasthttp.StatusOK)
 	ctx.SetBody(body)
+	return
+}
+
+func (t transport) YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error) {
+	userToken = ctx.UserValue("userToken").(string)
+	return
+}
+
+func (t transport) YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error) {
+	ctx.Response.Header.SetContentType("application/json")
+	ctx.Response.Header.SetStatusCode(fasthttp.StatusOK)
+	t.setCookie(ctx, cookie)
 	return
 }
 

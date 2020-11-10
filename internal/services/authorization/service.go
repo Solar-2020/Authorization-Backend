@@ -18,6 +18,7 @@ import (
 type Service interface {
 	Authorization(request models.Authorization) (cookie models.Cookie, err error)
 	Registration(request models.Registration) (cookie models.Cookie, err error)
+	Yandex(userToken string) (cookie models.Cookie, err error)
 	GetUserIdByCookie(cookieValue string) (userID int, err error)
 }
 
@@ -53,7 +54,6 @@ func (s *service) Authorization(request models.Authorization) (cookie models.Coo
 
 	err = s.authorizationStorage.InsertCookie(cookie)
 	return
-
 }
 
 func (s *service) Registration(request models.Registration) (cookie models.Cookie, err error) {
@@ -69,6 +69,21 @@ func (s *service) Registration(request models.Registration) (cookie models.Cooki
 	}
 
 	cookie, err = s.createCookie(userID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
+	if err != nil {
+		return
+	}
+
+	err = s.authorizationStorage.InsertCookie(cookie)
+	return
+}
+
+func (s *service) Yandex(userToken string) (cookie models.Cookie, err error) {
+	user, err := s.accountClient.GetYandexUser(userToken)
+	if err != nil {
+		return
+	}
+
+	cookie, err = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
 	if err != nil {
 		return
 	}

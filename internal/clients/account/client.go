@@ -109,6 +109,7 @@ func (c *client) GetYandexUser(userToken string) (user models.User, err error) {
 	if err != nil {
 		return user, err
 	}
+
 	req.URI().SetScheme("http")
 	req.URI().SetHost(tempURI.Host)
 	req.URI().SetPath("api/internal/account/yandex/" + userToken)

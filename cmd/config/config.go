@@ -13,4 +13,5 @@ type config struct {
 	SessionCookieLength                   int    `envconfig:"SESSING_COOKIE_LENGTH" default:"10"`
 	SessionCookieName                     string `envconfig:"SESSING_COOKIE_NAME" default:"SessionToken"`
 	ServerSecret                          string `envconfig:"SERVER_SECRET" default:"Basic secret"`
+	AccountServiceHost                    string `envconfig:"ACCOUNT_SERVICE_HOST" default:"develop.pay-together.ru"`
 }

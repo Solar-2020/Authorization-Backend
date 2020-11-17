@@ -27,6 +27,6 @@ type authorizationTransport interface {
 }
 
 type errorWorker interface {
-	ServeJSONError(ctx *fasthttp.RequestCtx, serveError error) (err error)
-	ServeFatalError(ctx *fasthttp.RequestCtx)
+	ServeJSONError(ctx *fasthttp.RequestCtx, serveError error)
+	NewError(httpCode int, responseError error, fullError error) (err error)
 }

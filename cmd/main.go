@@ -2,15 +2,13 @@ package main
 
 import (
 	"database/sql"
-	asapi "github.com/Solar-2020/Account-Backend/pkg/api"
+	account "github.com/Solar-2020/Account-Backend/pkg/client"
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/cmd/handlers"
 	authorizationHandler "github.com/Solar-2020/Authorization-Backend/cmd/handlers/authorization"
-	"github.com/Solar-2020/Authorization-Backend/internal/clients/account"
+
 	"github.com/Solar-2020/Authorization-Backend/internal/services/authorization"
 	"github.com/Solar-2020/Authorization-Backend/internal/storages/authorizationStorage"
-	authapi "github.com/Solar-2020/Authorization-Backend/pkg/api"
-	"github.com/Solar-2020/GoUtils/context/session"
 	httputils "github.com/Solar-2020/GoUtils/http"
 	"github.com/Solar-2020/GoUtils/http/errorWorker"
 	"github.com/kelseyhightower/envconfig"
@@ -43,11 +41,9 @@ func main() {
 	errorWorker := errorWorker.NewErrorWorker()
 
 	authorizationStorage := authorizationStorage.NewStorage(authorizationDB)
-	accountClient := account.NewClient(config.Config.AccountServiceAddress, config.Config.ServerSecret)
-	authorizationService := authorization.NewService(authorizationStorage, accountClient)
+	accountClient := account.NewClient(config.Config.AccountServiceHost, config.Config.ServerSecret)
+	authorizationService := authorization.NewService(authorizationStorage, accountClient, errorWorker)
 	authorizationTransport := authorization.NewTransport()
-
-	initServices()
 
 	authorizationHandler := authorizationHandler.NewHandler(authorizationService, authorizationTransport, errorWorker)
 
@@ -79,15 +75,4 @@ func main() {
 		//dbConnection.Shutdown()
 		log.Info().Str("msg", "goodbye").Send()
 	}(<-c)
-}
-
-func initServices() {
-	authService := authapi.AuthClient{
-		Addr: config.Config.AuthServiceAddress,
-	}
-	session.RegisterAuthService(&authService)
-	accountService := asapi.AccountClient{
-		Addr: config.Config.AccountServiceAddress,
-	}
-	session.RegisterAccountService(&accountService)
 }

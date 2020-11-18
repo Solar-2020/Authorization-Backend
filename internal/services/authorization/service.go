@@ -5,54 +5,47 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"database/sql"
-	"errors"
-	"fmt"
 	models2 "github.com/Solar-2020/Account-Backend/pkg/models"
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/internal/models"
 	"github.com/Solar-2020/GoUtils/common"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/crypto/pbkdf2"
 	"time"
 )
 
-type Service interface {
-	Authorization(request models.Authorization) (cookie models.Cookie, err error)
-	Registration(request models.Registration) (cookie models.Cookie, err error)
-	Yandex(userToken string) (cookie models.Cookie, err error)
-	GetUserIdByCookie(cookieValue string) (userID int, err error)
-}
-
 type service struct {
 	authorizationStorage authorizationStorage
-	accountClient        models.AccountServiceInterface
+	accountClient        accountClient
+	errorWorker          errorWorker
 }
 
-func NewService(authorizationStorage authorizationStorage, accountClient models.AccountServiceInterface) Service {
+func NewService(authorizationStorage authorizationStorage, accountClient accountClient, errorWorker errorWorker) *service {
 	return &service{
 		authorizationStorage: authorizationStorage,
 		accountClient:        accountClient,
+		errorWorker:          errorWorker,
 	}
 }
 
 func (s *service) Authorization(request models.Authorization) (cookie models.Cookie, err error) {
 	user, err := s.accountClient.GetUserByEmail(request.Login)
 	if err != nil {
-		err = fmt.Errorf("not exist")
-		return
+		return cookie, err
 	}
-	userID := user.ID
 
-	err = s.checkLogoPass(userID, request.Password)
+	err = s.checkLogoPass(user.ID, request.Password)
 	if err != nil {
 		return
 	}
 
-	cookie, err = s.createCookie(userID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
-	if err != nil {
-		return
-	}
+	cookie = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
 
 	err = s.authorizationStorage.InsertCookie(cookie)
+	if err != nil {
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
+		return
+	}
 	return
 }
 
@@ -65,15 +58,18 @@ func (s *service) Registration(request models.Registration) (cookie models.Cooki
 	pass := s.generatePassword(userID, request.Password)
 	err = s.authorizationStorage.InsertPassword(pass)
 	if err != nil {
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
 		return
 	}
 
-	cookie, err = s.createCookie(userID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
-	if err != nil {
-		return
-	}
+	cookie = s.createCookie(userID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
 
 	err = s.authorizationStorage.InsertCookie(cookie)
+	if err != nil {
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
+		return
+	}
+
 	return
 }
 
@@ -83,12 +79,14 @@ func (s *service) Yandex(userToken string) (cookie models.Cookie, err error) {
 		return
 	}
 
-	cookie, err = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
+	cookie = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
+
+	err = s.authorizationStorage.InsertCookie(cookie)
 	if err != nil {
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
 		return
 	}
 
-	err = s.authorizationStorage.InsertCookie(cookie)
 	return
 }
 
@@ -96,19 +94,22 @@ func (s *service) GetUserIdByCookie(cookieValue string) (userID int, err error) 
 	cookie, err := s.authorizationStorage.SelectCookieByValue(cookieValue)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return userID, errors.New("Кука не действительна")
+			err = s.errorWorker.NewError(fasthttp.StatusBadRequest, ErrorNotValidCookie, err)
+			return
 		}
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
 		return
 	}
 
 	if cookie.Expiration.Before(time.Now()) {
-		return userID, errors.New("Кука протухла")
+		err = s.errorWorker.NewError(fasthttp.StatusBadRequest, ErrorNotValidCookie, err)
+		return
 	}
 
 	return cookie.UserID, err
 }
 
-func (s *service) createCookie(userID int, expiration time.Duration) (cookie models.Cookie, err error) {
+func (s *service) createCookie(userID int, expiration time.Duration) (cookie models.Cookie) {
 	cookie.UserID = userID
 	cookie.Expiration = time.Now().Add(expiration)
 	cookie.Value = common.GetRandomString(int64(config.Config.SessionCookieLength),
@@ -119,13 +120,15 @@ func (s *service) createCookie(userID int, expiration time.Duration) (cookie mod
 func (s *service) checkLogoPass(userID int, userPassword string) (err error) {
 	basePass, err := s.authorizationStorage.SelectPasswordByUserID(userID)
 	if err != nil {
-		err = fmt.Errorf("not exist")
-		return
+		if err == sql.ErrNoRows {
+			return s.errorWorker.NewError(fasthttp.StatusBadRequest, ErrorUserNotFound, ErrorUserNotFound)
+		}
+		return s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
 	}
 
 	hashPassword := s.hashPassword([]byte(userPassword), basePass.Salt)
 	if !bytes.Equal(hashPassword, basePass.HashPassword) {
-		err = errors.New("wrong password")
+		return s.errorWorker.NewError(fasthttp.StatusBadRequest, ErrorIncorrectPassword, ErrorIncorrectPassword)
 	}
 	return
 }
@@ -143,15 +146,11 @@ func (s *service) hashPassword(plainPassword []byte, salt []byte) (hashPass []by
 }
 
 func (s *service) createUser(user models.Registration) (userID int, err error) {
-	resp, err := s.accountClient.CreateUser(models2.User{
+	userID, err = s.accountClient.CreateUser(models2.User{
 		Email:     user.Login,
 		Name:      user.Name,
 		Surname:   user.Surname,
 		AvatarURL: user.Avatar,
 	})
-	if err != nil {
-		return
-	}
-	userID = resp
 	return
 }

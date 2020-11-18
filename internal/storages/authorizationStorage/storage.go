@@ -96,11 +96,8 @@ func (s *storage) SelectPasswordByUserID(userID int) (pass models.Password, err 
 	const tmplQuery = `SELECT password_hash, salt, update_at FROM %s WHERE user_id=$1`
 
 	query := fmt.Sprintf(tmplQuery, passwordsTable)
-	row := s.db.QueryRow(query, userID)
-	if row == nil {
-		err = fmt.Errorf("not such a user")
-		return
-	}
-	err = row.Scan(&pass.HashPassword, &pass.Salt, &pass.UpdateAt)
+
+	err = s.db.QueryRow(query, userID).Scan(&pass.HashPassword, &pass.Salt, &pass.UpdateAt)
+
 	return
 }

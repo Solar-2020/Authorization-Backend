@@ -8,25 +8,11 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-type Transport interface {
-	AuthorizationDecode(ctx *fasthttp.RequestCtx) (request models.Authorization, err error)
-	AuthorizationEncode(ctx *fasthttp.RequestCtx, resp models.AuthorizationResponse, cookie models.Cookie) (err error)
-
-	RegistrationDecode(ctx *fasthttp.RequestCtx) (request models.Registration, err error)
-	RegistrationEncode(ctx *fasthttp.RequestCtx, resp models.RegistrationResponse, cookie models.Cookie) (err error)
-
-	GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error)
-	GetUserIdByCookieEncode(ctx *fasthttp.RequestCtx, response models.CheckAuthResponse) (err error)
-
-	YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error)
-	YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error)
-}
-
 type transport struct {
 	validator *validator.Validate
 }
 
-func NewTransport() Transport {
+func NewTransport() *transport {
 	return &transport{
 		validator: validator.New(),
 	}
@@ -81,6 +67,11 @@ func (t transport) GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request mo
 		return
 	}
 	err = t.validator.Struct(request)
+	return
+}
+
+func (t transport) GetUserIdByCookieDecodeV2(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error) {
+	request.SessionToken = string(ctx.QueryArgs().Peek("session_cookie"))
 	return
 }
 

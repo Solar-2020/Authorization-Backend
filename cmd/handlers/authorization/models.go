@@ -20,6 +20,7 @@ type authorizationTransport interface {
 	RegistrationEncode(ctx *fasthttp.RequestCtx, resp models.RegistrationResponse, cookie models.Cookie) (err error)
 
 	GetUserIdByCookieDecode(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error)
+	GetUserIdByCookieDecodeV2(ctx *fasthttp.RequestCtx) (request models.CheckAuthRequest, err error)
 	GetUserIdByCookieEncode(ctx *fasthttp.RequestCtx, response models.CheckAuthResponse) (err error)
 
 	YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error)

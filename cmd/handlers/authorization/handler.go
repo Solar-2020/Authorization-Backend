@@ -10,6 +10,7 @@ type Handler interface {
 	Registration(ctx *fasthttp.RequestCtx)
 	Yandex(ctx *fasthttp.RequestCtx)
 	GetUserIdByCookie(ctx *fasthttp.RequestCtx)
+	GetUserIdByCookieV2(ctx *fasthttp.RequestCtx)
 }
 
 type handler struct {
@@ -42,7 +43,7 @@ func (h *handler) Authorization(ctx *fasthttp.RequestCtx) {
 	resp := models.AuthorizationResponse{
 		Login:  auth.Login,
 		Status: "OK",
-		Uid: cookie.UserID,
+		Uid:    cookie.UserID,
 	}
 
 	err = h.authorizationTransport.AuthorizationEncode(ctx, resp, cookie)
@@ -65,10 +66,9 @@ func (h *handler) Registration(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-
 	resp := models.RegistrationResponse{
 		Registration: auth,
-		Uid: cookie.UserID,
+		Uid:          cookie.UserID,
 	}
 	err = h.authorizationTransport.RegistrationEncode(ctx, resp, cookie)
 	if err != nil {
@@ -99,6 +99,26 @@ func (h *handler) Yandex(ctx *fasthttp.RequestCtx) {
 
 func (h *handler) GetUserIdByCookie(ctx *fasthttp.RequestCtx) {
 	req, err := h.authorizationTransport.GetUserIdByCookieDecode(ctx)
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+
+	userID, err := h.authorizationService.GetUserIdByCookie(req.SessionToken)
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+
+	err = h.authorizationTransport.GetUserIdByCookieEncode(ctx, models.CheckAuthResponse{Uid: userID})
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+}
+
+func (h *handler) GetUserIdByCookieV2(ctx *fasthttp.RequestCtx) {
+	req, err := h.authorizationTransport.GetUserIdByCookieDecodeV2(ctx)
 	if err != nil {
 		h.errorWorker.ServeJSONError(ctx, err)
 		return

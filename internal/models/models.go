@@ -10,7 +10,7 @@ type Authorization struct {
 type AuthorizationResponse struct {
 	Login  string `json:"login"`
 	Status string `json:"status"`
-	Uid    int    `json:'uid'`
+	Uid    int    `json:"uid"`
 }
 
 type Registration struct {
@@ -23,7 +23,7 @@ type Registration struct {
 
 type RegistrationResponse struct {
 	Registration
-	Uid int `json:'uid'`
+	Uid int `json:"uid"`
 }
 
 type Cookie struct {
@@ -40,7 +40,7 @@ type Password struct {
 }
 
 type CheckAuthRequest struct {
-	SessionToken string `json:"cookie" validation"required"`
+	SessionToken string `json:"cookie" validation:"required"`
 }
 
 type CheckAuthResponse struct {

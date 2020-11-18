@@ -29,7 +29,7 @@ func (c *client) GetUserIDByCookie(sessionToken string) (userID int, err error) 
 	defer fasthttp.ReleaseRequest(req)
 	defer fasthttp.ReleaseResponse(resp)
 
-	req.URI().QueryArgs().Set("session_cookie", "sessionToken")
+	req.URI().QueryArgs().Set("session_cookie", sessionToken)
 	req.URI().SetScheme("http")
 	req.URI().SetHost(c.host)
 	req.URI().SetPath("api/internal/auth/cookie")

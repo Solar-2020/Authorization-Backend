@@ -3,7 +3,7 @@ module github.com/Solar-2020/Authorization-Backend
 go 1.14
 
 require (
-	github.com/Solar-2020/Account-Backend v1.0.6
+	github.com/Solar-2020/Account-Backend v1.0.7
 	github.com/Solar-2020/GoUtils v1.0.4
 	github.com/buaazp/fasthttprouter v0.1.1
 	github.com/go-playground/validator v9.31.0+incompatible

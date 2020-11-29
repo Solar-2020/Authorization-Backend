@@ -5,7 +5,8 @@ ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64 \
-    GOSUMDB=off
+    GOSUMDB=off \
+    GOPRIVATE=github.com/Solar-2020
 
 # Move to working directory /build
 WORKDIR /build

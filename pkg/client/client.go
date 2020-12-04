@@ -12,7 +12,7 @@ import (
 type Client interface {
 	GetUserIDByCookie(sessionToken string) (userID int, err error)
 	CompareSecret(inputSecret string) (err error)
-	AuthorizeRequest(sessionToken string, lifetime int, req fasthttp.Request) (res fasthttp.Request, err error)
+	AuthorizeRequest(sessionToken string, lifetime int, req fasthttp.RequestCtx) (res fasthttp.RequestCtx, err error)
 }
 
 type client struct {
@@ -72,7 +72,7 @@ func (c *client) CompareSecret(inputSecret string) (err error) {
 	return
 }
 
-func (c *client) AuthorizeRequest(sessionToken string, lifetime int, request fasthttp.Request) (res fasthttp.Request, err error) {
+func (c *client) AuthorizeRequest(sessionToken string, lifetime int, request fasthttp.RequestCtx) (res fasthttp.RequestCtx, err error) {
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(req)
@@ -99,7 +99,10 @@ func (c *client) AuthorizeRequest(sessionToken string, lifetime int, request fas
 		if cookie == nil || len(cookie) == 0 {
 			return res, c.errorWorker.NewError(fasthttp.StatusInternalServerError, errors.New("empty session key gor"), err)
 		}
-		request.Header.SetCookie("SessionToken", string(cookie))
+		c := fasthttp.AcquireCookie()
+		c.ParseBytes(cookie)
+		request.Response.Header.SetCookie(c)
+		request.Request.Header.SetCookie(string(c.Key()), string(c.Value()))
 		return request, nil
 	case fasthttp.StatusBadRequest:
 		var httpErr httpError

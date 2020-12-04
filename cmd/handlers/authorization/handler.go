@@ -11,6 +11,7 @@ type Handler interface {
 	Yandex(ctx *fasthttp.RequestCtx)
 	GetUserIdByCookie(ctx *fasthttp.RequestCtx)
 	GetUserIdByCookieV2(ctx *fasthttp.RequestCtx)
+	DublicateSession(ctx *fasthttp.RequestCtx)
 }
 
 type handler struct {
@@ -131,6 +132,26 @@ func (h *handler) GetUserIdByCookieV2(ctx *fasthttp.RequestCtx) {
 	}
 
 	err = h.authorizationTransport.GetUserIdByCookieEncode(ctx, models.CheckAuthResponse{Uid: userID})
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+}
+
+func (h *handler) DublicateSession(ctx *fasthttp.RequestCtx) {
+	req, err := h.authorizationTransport.DublicateCookieDecode(ctx)
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+
+	newCookie, err := h.authorizationService.DublicateCookie(req.SessionToken, req.Lifetime)
+	if err != nil {
+		h.errorWorker.ServeJSONError(ctx, err)
+		return
+	}
+
+	err = h.authorizationTransport.DublicateCookieEncode(ctx, newCookie)
 	if err != nil {
 		h.errorWorker.ServeJSONError(ctx, err)
 		return

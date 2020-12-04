@@ -6,6 +6,7 @@ import (
 	"github.com/Solar-2020/Authorization-Backend/internal/models"
 	"github.com/go-playground/validator"
 	"github.com/valyala/fasthttp"
+	"strconv"
 )
 
 type transport struct {
@@ -93,6 +94,22 @@ func (t transport) YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err
 
 func (t transport) YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error) {
 	ctx.Response.Header.SetContentType("application/json")
+	ctx.Response.Header.SetStatusCode(fasthttp.StatusOK)
+	t.setCookie(ctx, cookie)
+	return
+}
+
+func (t transport) DublicateCookieDecode(ctx *fasthttp.RequestCtx) (request models.DublicateCookieRequest, err error) {
+	tokenReq, err := t.GetUserIdByCookieDecodeV2(ctx)
+	if err != nil {
+		return
+	}
+	request.SessionToken = tokenReq.SessionToken
+	request.Lifetime, _ = strconv.Atoi(string(ctx.QueryArgs().Peek("lifetime")))	// default if invalid
+	return
+}
+
+func (t transport) DublicateCookieEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error) {
 	ctx.Response.Header.SetStatusCode(fasthttp.StatusOK)
 	t.setCookie(ctx, cookie)
 	return

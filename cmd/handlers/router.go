@@ -21,5 +21,7 @@ func NewFastHttpRouter(authorization authorizationHandler.Handler, middleware ht
 	router.Handle("POST", "/api/auth/cookie", middlewareChain(authorization.GetUserIdByCookie))
 	router.Handle("GET", "/api/internal/auth/cookie", middlewareChain(authorization.GetUserIdByCookieV2))
 
+	router.Handle("POST", "/api/internal/auth/cookie/dublicate", middlewareChain(authorization.DublicateSession))
+
 	return router
 }

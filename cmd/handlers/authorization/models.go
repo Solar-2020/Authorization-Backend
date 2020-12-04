@@ -10,6 +10,7 @@ type authorizationService interface {
 	Registration(request models.Registration) (cookie models.Cookie, err error)
 	Yandex(userToken string) (cookie models.Cookie, err error)
 	GetUserIdByCookie(cookieValue string) (userID int, err error)
+	DublicateCookie(cookieValue string, lifetime int) (cookie models.Cookie, err error)
 }
 
 type authorizationTransport interface {
@@ -25,6 +26,10 @@ type authorizationTransport interface {
 
 	YandexDecode(ctx *fasthttp.RequestCtx) (userToken string, err error)
 	YandexEncode(ctx *fasthttp.RequestCtx, cookie models.Cookie) (err error)
+
+	DublicateCookieDecode(ctx *fasthttp.RequestCtx) (request models.DublicateCookieRequest, err error)
+	DublicateCookieEncode(ctx *fasthttp.RequestCtx, response models.Cookie) (err error)
+
 }
 
 type errorWorker interface {

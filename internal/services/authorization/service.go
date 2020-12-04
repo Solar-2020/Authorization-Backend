@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"database/sql"
+	"errors"
 	models2 "github.com/Solar-2020/Account-Backend/pkg/models"
 	"github.com/Solar-2020/Authorization-Backend/cmd/config"
 	"github.com/Solar-2020/Authorization-Backend/internal/models"
@@ -39,14 +40,7 @@ func (s *service) Authorization(request models.Authorization) (cookie models.Coo
 		return
 	}
 
-	cookie = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
-
-	err = s.authorizationStorage.InsertCookie(cookie)
-	if err != nil {
-		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
-		return
-	}
-	return
+	return s.addCookie(user.ID)
 }
 
 func (s *service) Registration(request models.Registration) (cookie models.Cookie, err error) {
@@ -62,15 +56,7 @@ func (s *service) Registration(request models.Registration) (cookie models.Cooki
 		return
 	}
 
-	cookie = s.createCookie(userID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
-
-	err = s.authorizationStorage.InsertCookie(cookie)
-	if err != nil {
-		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
-		return
-	}
-
-	return
+	return s.addCookie(userID)
 }
 
 func (s *service) Yandex(userToken string) (cookie models.Cookie, err error) {
@@ -79,16 +65,34 @@ func (s *service) Yandex(userToken string) (cookie models.Cookie, err error) {
 		return
 	}
 
-	cookie = s.createCookie(user.ID, time.Duration(config.Config.DefaultCookieLifetime)*time.Second)
+	return s.addCookie(user.ID)
+}
+
+func (s *service) DublicateCookie(cookieValue string, lifetime int) (newCookie models.Cookie, err error) {
+	userId, err := s.GetUserIdByCookie(cookieValue)
+	if err != nil {
+		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, errors.New("неверный исходный токен"), err)
+		return
+	}
+	newCookie, err = s.addCookieWithLifetime(userId, time.Duration(lifetime))
+	return
+}
+
+func (s *service) addCookie(userId int) (cookie models.Cookie, err error) {
+	return s.addCookieWithLifetime(userId, time.Duration(config.Config.DefaultCookieLifetime))
+}
+
+func (s *service) addCookieWithLifetime(userId int, lifetime time.Duration) (cookie models.Cookie, err error) {
+	cookie = s.createCookie(userId, lifetime*time.Second)
 
 	err = s.authorizationStorage.InsertCookie(cookie)
 	if err != nil {
 		err = s.errorWorker.NewError(fasthttp.StatusInternalServerError, nil, err)
 		return
 	}
-
 	return
 }
+
 
 func (s *service) GetUserIdByCookie(cookieValue string) (userID int, err error) {
 	cookie, err := s.authorizationStorage.SelectCookieByValue(cookieValue)

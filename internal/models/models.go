@@ -47,3 +47,8 @@ type CheckAuthResponse struct {
 	Uid int `json:"uid"`
 	//Email string	`json:"email"`
 }
+
+type DublicateCookieRequest struct {
+	SessionToken string `json:"cookie" validate:"required"`
+	Lifetime 	 int	`json:"lifetime"`
+}
